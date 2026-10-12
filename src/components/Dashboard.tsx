@@ -20,16 +20,20 @@ export function Dashboard() {
   const [teamContext, setTeamContext] = useLocalStorage("pulse:team-context", "");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [meta, setMeta] = useState<{ durationMs: number; model?: string } | null>(null);
+  // Mode the shown answer was produced in; differs from modeId once the user switches modes.
+  const [answerModeId, setAnswerModeId] = useState<ModeId>(DEFAULT_MODE);
 
   const { status, answer, error, ask, stop, show } = useAsk();
   const history = useHistory();
   const mode = getMode(modeId) ?? MODES[0];
+  const answerMode = status === "idle" ? mode : (getMode(answerModeId) ?? mode);
   const busy = status === "loading" || status === "streaming";
 
   const submit = async () => {
     const asked = question.trim();
     setActiveId(null);
     setMeta(null);
+    setAnswerModeId(modeId);
 
     const result = await ask({ question: asked, mode: modeId, teamContext });
     if (!result) return;
@@ -43,6 +47,7 @@ export function Dashboard() {
     setModeId(item.mode);
     setQuestion(item.question);
     setActiveId(item.id);
+    setAnswerModeId(item.mode);
     setMeta({ durationMs: item.durationMs, model: item.model });
     show(item.answer);
   };
@@ -70,7 +75,7 @@ export function Dashboard() {
             onStop={stop}
             busy={busy}
           />
-          <AnswerPanel status={status} answer={answer} error={error} mode={mode} meta={meta} onRetry={submit} />
+          <AnswerPanel status={status} answer={answer} error={error} mode={answerMode} meta={meta} onRetry={submit} />
         </main>
 
         <aside className="space-y-4">
